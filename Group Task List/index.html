@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        .completed {
+            text-decoration: line-through;
+            color: grey;
+        }
+        .hidden {
+            display: none;
+        }
+        .expandable {
+            resize: none;
+            overflow: hidden;
+        }
+        body {
+            background: #7e40f6;
+            background: linear-gradient(to right, rgba(126, 64, 246, 1), rgba(80, 139, 252, 1));
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        h1 {
+            letter-spacing: 5px;
+            text-decoration: underline;
+            text-align: center;
+            padding: 8px;
+            margin: 0;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+        }
+        footer {
+            background-color: #5508ee65;
+            border-radius: 20px;
+            border: none;
+            padding: 10px;
+            text-align: center;
+            position: initial;
+            margin: 10em auto 0;
+            width: 100%;
+            max-width: 600px;
+        }
+        footer a {
+            color: aqua;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container mt-5">
+    <h1>Community Elders</h1>
+    <h2 class="text-center mb-4">Task Management</h2>
+
+    <div class="input-group mb-3">
+        <input type="text" id="searchTask" class="form-control" placeholder="Search tasks..." oninput="filterTasks()">
+        <div class="input-group-append">
+            <button class="btn btn-success" type="button" onclick="addTask()">Add Task</button>
+        </div>
+    </div>
+
+    <table class="table" id="taskTable">
+        <thead>
+            <tr>
+                <th>Member</th>
+                <th>Task</th>
+                <th>Priority</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script>
+// Simulate login as admin Imran Shiundu
+const isAdmin = true;
+const userName = "Imran Shiundu";
+
+// Load tasks from localStorage
+const tasks = JSON.parse(localStorage.getItem('tasks')) || [
+    { member: 'Imran Shiundu', task: 'Call Sam For payments', priority: 'High', priorityClass: 'bg-danger', completed: false },
+    { member: 'Eugene Blasio', task: 'Make payment to Bluedart', priority: 'Low', priorityClass: 'bg-success', completed: false },
+    { member: 'Ali Wangara', task: 'Office rent', priority: 'Middle', priorityClass: 'bg-warning', completed: false }
+];
+
+// Function to render tasks
+function renderTasks() {
+    const taskTableBody = document.querySelector('#taskTable tbody');
+    taskTableBody.innerHTML = '';
+    tasks.forEach((task, index) => {
+        taskTableBody.innerHTML += `
+            <tr class="fw-normal ${task.completed ? 'completed' : ''}">
+                <th ${isAdmin ? 'onclick="toggleEditMember(' + index + ')"' : ''}>
+                    <span class="member-text">${task.member}</span>
+                    ${isAdmin ? `<input type="text" class="form-control bg-transparent hidden" value="${task.member}" onchange="updateMember(${index}, this.value)">` : ''}
+                </th>
+                <td ${isAdmin ? 'onclick="toggleEditTask(' + index + ')"' : ''} class="align-middle">
+                    <span class="task-text">${task.task}</span>
+                    ${isAdmin ? `<textarea class="form-control text-white bg-transparent expandable hidden" rows="1" onchange="updateTask(${index}, this.value)">${task.task}</textarea>` : ''}
+                </td>
+                <td class="align-middle">
+                    ${isAdmin ? `<select class="form-control" onchange="updatePriority(${index}, this.value)">
+                        <option value="High" class="bg-danger" ${task.priority === 'High' ? 'selected' : ''}>High</option>
+                        <option value="Middle" class="bg-warning" ${task.priority === 'Middle' ? 'selected' : ''}>Middle</option>
+                        <option value="Low" class="bg-success" ${task.priority === 'Low' ? 'selected' : ''}>Low</option>
+                    </select>` : `<span class="${task.priorityClass} p-2 rounded">${task.priority}</span>`}
+                </td>
+                <td class="align-middle">
+                    ${isAdmin ? `<a href="#!" onclick="markTaskComplete(${index})"><i class="fas fa-check fa-lg text-success mr-3"></i></a>
+                    <a href="#!" onclick="removeTask(${index})"><i class="fas fa-trash-alt fa-lg text-danger"></i></a>` : ''}
+                </td>
+            </tr>
+        `;
+    });
+    saveTasks();
+}
+
+// Toggle between showing and hiding input fields for task and member
+function toggleEditTask(index) {
+    const taskRow = document.querySelectorAll('#taskTable tbody tr')[index];
+    const taskText = taskRow.querySelector('.task-text');
+    const taskInput = taskRow.querySelector('textarea');
+    taskText.classList.toggle('hidden');
+    taskInput.classList.toggle('hidden');
+    taskInput.focus();
+    taskInput.style.height = 'auto';
+    taskInput.style.height = taskInput.scrollHeight + 'px';
+}
+
+function toggleEditMember(index) {
+    const taskRow = document.querySelectorAll('#taskTable tbody tr')[index];
+    const memberText = taskRow.querySelector('.member-text');
+    const memberInput = taskRow.querySelector('input[type="text"]');
+    memberText.classList.toggle('hidden');
+    memberInput.classList.toggle('hidden');
+    memberInput.focus();
+}
+
+// Function to add a new task
+function addTask() {
+    if (isAdmin) {
+        tasks.push({
+            member: 'New Member',
+            task: 'New Task',
+            priority: 'High',
+            priorityClass: 'bg-danger',
+            completed: false
+        });
+        renderTasks();
+    }
+}
+
+// Function to update a task
+function updateTask(index, newTask) {
+    if (isAdmin) {
+        tasks[index].task = newTask;
+        renderTasks();
+    }
+}
+
+// Function to update member name
+function updateMember(index, newMember) {
+    if (isAdmin) {
+        tasks[index].member = newMember;
+        renderTasks();
+    }
+}
+
+// Function to update priority
+function updatePriority(index, newPriority) {
+    if (isAdmin) {
+        tasks[index].priority = newPriority;
+        tasks[index].priorityClass = newPriority === 'High' ? 'bg-danger' : newPriority === 'Middle' ? 'bg-warning' : 'bg-success';
+        renderTasks();
+    }
+}
+
+// Function to remove a task
+function removeTask(index) {
+    if (isAdmin) {
+        tasks.splice(index, 1);
+        renderTasks();
+    }
+}
+
+// Function to mark a task as complete
+function markTaskComplete(index) {
+    if (isAdmin) {
+        tasks[index].completed = !tasks[index].completed;
+        renderTasks();
+    }
+}
+
+// Save tasks to localStorage
+function saveTasks() {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+}
+
+// Function to filter tasks based on search input
+function filterTasks() {
+    const searchQuery = document.querySelector('#searchTask').value.toLowerCase();
+    const filteredTasks = tasks.filter(task =>
+        task.member.toLowerCase().includes(searchQuery) || task.task.toLowerCase().includes(searchQuery)
+    );
+
+    const taskTableBody = document.querySelector('#taskTable tbody');
+    taskTableBody.innerHTML = '';
+    filteredTasks.forEach((task, index) => {
+        taskTableBody.innerHTML += `
+            <tr class="fw-normal ${task.completed ? 'completed' : ''}">
+                <th ${isAdmin ? 'onclick="toggleEditMember(' + index + ')"' : ''}>
+                    <span class="member-text">${task.member}</span>
+                    ${isAdmin ? `<input type="text" class="form-control bg-transparent hidden" value="${task.member}" onchange="updateMember(${index}, this.value)">` : ''}
+                </th>
+                <td ${isAdmin ? 'onclick="toggleEditTask(' + index + ')"' : ''} class="align-middle">
+                    <span class="task-text">${task.task}</span>
+                    ${isAdmin ? `<textarea class="form-control text-white bg-transparent expandable hidden" rows="1" onchange="updateTask(${index}, this.value)">${task.task}</textarea>` : ''}
+                </td>
+                <td class="align-middle">
+                    ${isAdmin ? `<select class="form-control" onchange="updatePriority(${index}, this.value)">
+                        <option value="High" class="bg-danger" ${task.priority === 'High' ? 'selected' : ''}>High</option>
+                        <option value="Middle" class="bg-warning" ${task.priority === 'Middle' ? 'selected' : ''}>Middle</option>
+                        <option value="Low" class="bg-success" ${task.priority === 'Low' ? 'selected' : ''}>Low</option>
+                    </select>` : `<span class="${task.priorityClass} p-2 rounded">${task.priority}</span>`}
+                </td>
+                <td class="align-middle">
+                    ${isAdmin ? `<a href="#!" onclick="markTaskComplete(${index})"><i class="fas fa-check fa-lg text-success mr-3"></i></a>
+                    <a href="#!" onclick="removeTask(${index})"><i class="fas fa-trash-alt fa-lg text-danger"></i></a>` : ''}
+                </td>
+            </tr>
+        `;
+    });
+    
+}
+
+// Adjust textarea height based on content
+document.addEventListener('input', function (event) {
+    if (event.target.tagName.toLowerCase() === 'textarea') {
+        event.target.style.height = 'auto';
+        event.target.style.height = event.target.scrollHeight + 'px';
+    }
+});
+
+// Initial render
+renderTasks();
+</script>
+
+<footer>
+  <p>All Rights Observed !</p>
+  <p>Website Crafted By <a href="https://imrancodecrafts.netlify.app/">ImranCodeCrafts</a></p>
+</footer>
+</body>
+</html>
